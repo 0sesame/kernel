@@ -9,8 +9,8 @@
 #define PAGE_TEST_COUNT 20
 
 static struct UsableMemoryRegion usable_memory_regions[MAX_MEMORY_REGIONS + 1]; // terminated with all 0 struct
-void *never_allocated_head;
 static struct PageHeader *free_list_head = (struct PageHeader *) 0x0;
+void *never_allocated_head;
 uint64_t last_available_addr = 0;
 static void *pages[PAGE_TEST_COUNT];
 
@@ -120,6 +120,7 @@ void PAGE_test(void){
     while(page){
         page = PAGE_pf_alloc();
         if(!(page)){
+            printk("memory test done\n");
             return;
         }
         for(int j=0; j < PAGE_SIZE / (sizeof(uint64_t)); j++){
