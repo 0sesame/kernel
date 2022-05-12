@@ -117,10 +117,12 @@ void PAGE_test(void){
         PAGE_pf_free(pages[i]);
         printk("Freed page %p\n", pages[i]);
     } 
+    int count = 0;
     while(page){
         page = PAGE_pf_alloc();
         if(!(page)){
             printk("memory test done\n");
+            printk("%d\n", count);
             return;
         }
         for(int j=0; j < PAGE_SIZE / (sizeof(uint64_t)); j++){
@@ -133,5 +135,6 @@ void PAGE_test(void){
             }
             test_out++;
         }
+        count++;
     }
 }
