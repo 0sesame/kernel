@@ -16,7 +16,6 @@ int kmain(void *args){
     PAGE_init(args);
     printk("printk\n");
     SER_write("ser write\n", 10);
-    PAGE_test();
     initialize_ps2_controller();
     initialize_ps2_keyboard();
     while(1){
