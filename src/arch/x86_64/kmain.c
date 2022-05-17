@@ -5,6 +5,7 @@
 #include "interrupt.h"
 #include "serial.h"
 #include "page_manager.h"
+#include "mmu.h"
 
 int kmain(void *args);
 
@@ -14,10 +15,9 @@ int kmain(void *args){
     SER_init();
     GDT_init();
     PAGE_init(args);
-    printk("printk\n");
-    SER_write("ser write\n", 10);
     initialize_ps2_controller();
     initialize_ps2_keyboard();
+    MMU_init_virtual_mem();
     while(1){
         asm volatile("hlt" : :);
     };

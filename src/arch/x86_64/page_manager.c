@@ -4,7 +4,6 @@
 #include "multiboot.h"
 #include "page_manager.h"
 
-#define PAGE_SIZE 4096
 #define INIT_PAGE_COUNT 10000
 #define PAGE_TEST_COUNT 20
 
@@ -63,6 +62,11 @@ void *get_next_available_never_allocd_page(uint64_t init_page_start){
         i++;
     }
     return (void *) last_available_addr;
+}
+
+uint64_t PAGE_last_available_address(void){
+    // after page initialization can be used to get last available address in physical memory
+    return last_available_addr;
 }
 
 void *PAGE_pf_alloc(void){
