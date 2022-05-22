@@ -205,6 +205,7 @@ void IRQ_init(void){
     IRQ_set_clear_mask(1, 1); // clear mask for keyboard interrupt
 
     IRQ_set_handler(0, IRQ_handle_div0, (void *) 0);
+    IRQ_set_handler(14, IRQ_page_fault, (void *) 0);
     IRQ_set_handler(PIC1_BASE, IRQ_handle_timeout, (void *) 0);
     IRQ_set_handler(1 + PIC1_BASE, IRQ_handle_keyboard, (void *) 0);
     STI;

@@ -95,8 +95,6 @@ void PAGE_init(void *multiboot_tags){
     int usable_memory_regions_count;
     int i;
     uint64_t end_of_usable_region;
-    printk("multiboot tag pointer: %p\n", multiboot_tags);
-    printk("total tag size: %u\n", header->total_tag_size);
     parse_multiboot_tags(usable_memory_regions, (void *) (header + 1), header->total_tag_size, &usable_memory_regions_count);
 
     while(!(usable_memory_regions[i].length == 0 && usable_memory_regions[i].start_address == 0)){
