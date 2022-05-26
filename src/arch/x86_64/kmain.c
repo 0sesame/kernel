@@ -6,6 +6,7 @@
 #include "serial.h"
 #include "page_manager.h"
 #include "mmu.h"
+#include "malloc.h"
 
 int kmain(void *args);
 int kmain_virtual(void *args);
@@ -31,7 +32,7 @@ void test_virtual_mem_alloc(void){
     void *page = (void*) 0x01;
     uint64_t *test_out;
     int count = 0;
-    for(int i = 0; i < (2^14); i++){ // allocate about 65MiB of memory as test
+    for(int i = 0; i < 10000; i++){ // allocate about 40MiB of memory as test
         page = MMU_pf_alloc();
         if(!(page)){
             printk("memory test done\n");
@@ -50,15 +51,162 @@ void test_virtual_mem_alloc(void){
         }
         count++;
     }
-    printk("Passed virtual memory test\n");
+    printk("Passed virtual memory test for %d pages\n", count);
+}
+
+void test_bad_mem_access(void){
+    uint8_t *dont_write_here = (uint8_t *) ((uint64_t) 0x3 << 40);
+    *dont_write_here = 4;
+}
+
+void test_kmalloc(int free){
+    int *int_ptr;
+    int size;
+    int iterations = 100;
+    for(int i = 0; i < iterations; i++){
+        int_ptr = kmalloc(sizeof(uint64_t));
+        *int_ptr = i;
+        if(*int_ptr != i){
+            printk("Failed kmalloc test\n");
+        }
+        printk("int_ptr on iteration %d\n", *int_ptr);
+        if(free){
+            kfree(int_ptr);
+        }
+    }
+    size = 33;
+    for(int i = 0; i < iterations; i++){
+        int_ptr = kmalloc(size);
+        for(int j = 0; j < (size / sizeof(int)); j++){
+            *(int_ptr + j) = i;
+        }
+        for(int j = 0; j < (size / sizeof(int)); j++){
+            if(*(int_ptr + j) != i){
+                printk("Failed kmalloc test\n");
+            };
+        }
+        printk("int_ptr on iteration %d\n", *int_ptr);
+        if(free){
+            kfree(int_ptr);
+        }
+    }
+    size = 65;
+    for(int i = 0; i < iterations; i++){
+        int_ptr = kmalloc(size);
+        for(int j = 0; j < (size / sizeof(int)); j++){
+            *(int_ptr + j) = i;
+        }
+        for(int j = 0; j < (size / sizeof(int)); j++){
+            if(*(int_ptr + j) != i){
+                printk("Failed kmalloc test\n");
+            };
+        }
+        printk("int_ptr on iteration %d\n", *int_ptr);
+        if(free){
+            kfree(int_ptr);
+        }
+    }
+    size = 129;
+    for(int i = 0; i < iterations; i++){
+        int_ptr = kmalloc(size);
+        for(int j = 0; j < (size / sizeof(int)); j++){
+            *(int_ptr + j) = i;
+        }
+        for(int j = 0; j < (size / sizeof(int)); j++){
+            if(*(int_ptr + j) != i){
+                printk("Failed kmalloc test\n");
+            };
+        }
+        printk("int_ptr on iteration %d\n", *int_ptr);
+        if(free){
+            kfree(int_ptr);
+        }
+    }
+    size = 129;
+    for(int i = 0; i < iterations; i++){
+        int_ptr = kmalloc(size);
+        for(int j = 0; j < (size / sizeof(int)); j++){
+            *(int_ptr + j) = i;
+        }
+        for(int j = 0; j < (size / sizeof(int)); j++){
+            if(*(int_ptr + j) != i){
+                printk("Failed kmalloc test\n");
+            };
+        }
+        printk("int_ptr on iteration %d\n", *int_ptr);
+        if(free){
+            kfree(int_ptr);
+        }
+    }
+    size = 513;
+    for(int i = 0; i < iterations; i++){
+        int_ptr = kmalloc(size);
+        for(int j = 0; j < (size / sizeof(int)); j++){
+            *(int_ptr + j) = i;
+        }
+        for(int j = 0; j < (size / sizeof(int)); j++){
+            if(*(int_ptr + j) != i){
+                printk("Failed kmalloc test\n");
+            };
+        }
+        printk("int_ptr on iteration %d\n", *int_ptr);
+        if(free){
+            kfree(int_ptr);
+        }
+    }
+    size = 1025;
+    for(int i = 0; i < iterations; i++){
+        int_ptr = kmalloc(size);
+        for(int j = 0; j < (size / sizeof(int)); j++){
+            *(int_ptr + j) = i;
+        }
+        for(int j = 0; j < (size / sizeof(int)); j++){
+            if(*(int_ptr + j) != i){
+                printk("Failed kmalloc test\n");
+            };
+        }
+        printk("int_ptr on iteration %d\n", *int_ptr);
+        if(free){
+            kfree(int_ptr);
+        }
+    }
+    size = 2049;
+    for(int i = 0; i < iterations; i++){
+        int_ptr = kmalloc(size);
+        for(int j = 0; j < (size / sizeof(int)); j++){
+            *(int_ptr + j) = i;
+        }
+        for(int j = 0; j < (size / sizeof(int)); j++){
+            if(*(int_ptr + j) != i){
+                printk("Failed kmalloc test\n");
+            };
+        }
+        printk("int_ptr on iteration %d\n", *int_ptr);
+        if(free){
+            kfree(int_ptr);
+        }
+    }
+}
+
+void stress_test_stack(int inc){
+    uint64_t on_stack = inc;
+    printk("on_stack: %ld\n", on_stack);
+    printk("on_stack: %p\n", &on_stack);
+    if(inc == 0){
+        return;
+    }
+    stress_test_stack(inc - 1);
 }
 
 int kmain_virtual(void *args){
-    //meme dream beam machine
-    int on_stack = 1;
-    //uint64_t *hm = (uint64_t *)0xFFFDEADBEEF;
-    printk("on stack int %p\n", &on_stack);
+    //stress_test_stack(1000);
     test_virtual_mem_alloc();
+    //test_bad_mem_access();
+    initialize_heap();
+    //test_kmalloc(0);
+    test_kmalloc(1);
+    print_pool_avail_blocks();
+    printk("Memory tests passed\n");
     while(1){
         asm volatile("hlt" : :);
     };

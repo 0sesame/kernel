@@ -15,7 +15,7 @@
 static struct PageTable *Pml4Table;
 static uint64_t virutal_kernel_heap_next_avail = KERNEL_HEAP_START;
 
-struct PageTable* init_page_table_for_entry(struct PageTableEntry* entry, uint8_t alloc_on_demand, uint8_t present){
+struct PageTable* init_page_table_for_entry(struct PageTableEntry* entry, uint8_t alloc_on_demand, uint8_t present, uint8_t alloc_cascade){
     struct PageTable *new_pt = (struct PageTable *) PAGE_pf_alloc();
     memset((void *) new_pt, 0, PAGE_SIZE); // 0 out pml4table
     if(new_pt == 0){
@@ -33,7 +33,7 @@ struct PageTable* init_page_table_for_entry(struct PageTableEntry* entry, uint8_
 
 }
 
-struct PageTableEntry *traverse_page_tables_for_entry(struct PageTableEntry *entry, uint64_t *address, uint8_t init, uint64_t physical_addr, uint8_t table_level, uint8_t alloc_on_demand, uint8_t present){
+struct PageTableEntry *traverse_page_tables_for_entry(struct PageTableEntry *entry, uint64_t *address, uint8_t init, uint64_t physical_addr, uint8_t table_level, uint8_t alloc_on_demand, uint8_t present, uint8_t cascade){
     // uses or initializes page tables at indices according to address, ending with putting physical_addr in the p1 table bas address
     struct PageTableIndex *page_table_index = (struct PageTableIndex *) address;
     uint16_t table_index;
@@ -46,7 +46,7 @@ struct PageTableEntry *traverse_page_tables_for_entry(struct PageTableEntry *ent
 
     if(table_level == 0){
         if(init){
-            entry->base_address = physical_addr >> 12; // identity map address
+            entry->base_address = physical_addr >> 12;
             entry->present = present;
             entry->alloc_on_demand = alloc_on_demand;
             entry->writable = 1;
@@ -67,7 +67,7 @@ struct PageTableEntry *traverse_page_tables_for_entry(struct PageTableEntry *ent
 
         if(!(entry->present)){
             if(init){
-                entry = &(init_page_table_for_entry(entry, alloc_on_demand, present)->entries[table_index]);
+                entry = &(init_page_table_for_entry(entry, 0, 1, cascade)->entries[table_index]);
             }
             else{
                 return entry; // if not initializing return null since no entry present to retrieve
@@ -78,7 +78,7 @@ struct PageTableEntry *traverse_page_tables_for_entry(struct PageTableEntry *ent
         }
     }
 
-    return traverse_page_tables_for_entry(entry, address, init, physical_addr, table_level - 1, alloc_on_demand, present);
+    return traverse_page_tables_for_entry(entry, address, init, physical_addr, table_level - 1, alloc_on_demand, present, cascade);
 }
 
 struct PageTable *huge_table_p2_id_map(){
@@ -102,13 +102,16 @@ struct PageTable *huge_table_p2_id_map(){
     return p4;
 }
 
-void debug_page_table(struct PageTable *Pml4Table, uint64_t address){
+void debug_page_table(struct PageTable *table, uint64_t address){
+    if(!(table)){
+        table = Pml4Table;
+    }
     struct PageTableIndex *page_indx = (struct PageTableIndex *) &address;
     struct PageTable *curr;
-    printk("addr on stack: %lx\n", address);
-    printk("addr translated: %lx\n", ((uint64_t) traverse_page_tables_for_entry(0, &address, 0, 0, 3, 0, 0)->base_address) << 12);
-    printk("p4: %p\n", Pml4Table);
-    curr = (struct PageTable *) ((uint64_t) Pml4Table->entries[page_indx->p4_index].base_address << 12);
+    printk("addr: %lx\n", address);
+    printk("addr translated: %lx\n", ((uint64_t) traverse_page_tables_for_entry(0, &address, 0, 0, 3, 0, 0, 0)->base_address) << 12);
+    printk("p4: %p\n", table);
+    curr = (struct PageTable *) ((uint64_t) table->entries[page_indx->p4_index].base_address << 12);
     printk("p3: %p from p4 indx: %d\n", curr, page_indx->p4_index);
     curr = (struct PageTable *) ((uint64_t) curr->entries[page_indx->p3_index].base_address << 12);
     printk("p2: %p from p3 indx: %d\n", curr, page_indx->p3_index);
@@ -120,11 +123,10 @@ void debug_page_table(struct PageTable *Pml4Table, uint64_t address){
 
 void *MMU_pf_alloc(void){
     uint64_t temp;
-
-    traverse_page_tables_for_entry(0, &virutal_kernel_heap_next_avail, 1, 0, 3, 1, 0); // alloc on demand, not present
+    //printk("Traversing for %p\n", (void *) virutal_kernel_heap_next_avail);
+    traverse_page_tables_for_entry(0, &virutal_kernel_heap_next_avail, 1, 0, 3, 1, 0, 0); // alloc on demand, not present
     temp = virutal_kernel_heap_next_avail;
     virutal_kernel_heap_next_avail += PAGE_SIZE;
-
     return (void *)temp;
 }
 
@@ -132,8 +134,19 @@ void MMU_pf_free(void *pf){
     uint64_t virtual_addr = (uint64_t) pf;
 
     // don't actually need to turn off present bit or alloc on demand stuff since we aren't gonna reuse this 
-    uint64_t physical_addr = ((uint64_t) traverse_page_tables_for_entry(0, &virtual_addr, 0, 0, 3, 0, 0)->base_address) << 12; 
+    uint64_t physical_addr = ((uint64_t) traverse_page_tables_for_entry(0, &virtual_addr, 0, 0, 3, 0, 0, 0)->base_address) << 12; 
     PAGE_pf_free((void *) physical_addr);
+}
+
+void *MMU_pf_alloc_many(int num){
+    void *start;
+    for(int i =0; i<num; i++){
+        if(i == 0){
+            start = MMU_pf_alloc();
+        }
+        MMU_pf_alloc();
+    }
+    return start;
 }
 
 void *MMU_init_virtual_mem(void){
@@ -144,9 +157,10 @@ void *MMU_init_virtual_mem(void){
     uint64_t page_addr;
     uint64_t last_physical_addr = PAGE_last_available_address();
 
+    Pml4Table = PAGE_pf_alloc();
     memset((void *) Pml4Table, 0, PAGE_SIZE); // 0 out pml4table
     for(page_addr = 0; page_addr < last_physical_addr; page_addr += PAGE_SIZE){
-        traverse_page_tables_for_entry(0, &page_addr, 1, page_addr, 3, 0, 1);
+        traverse_page_tables_for_entry(0, &page_addr, 1, page_addr, 3, 0, 1, 0);
     }
 
     cr3.base_address = ((uint64_t) Pml4Table >> 12);
@@ -154,7 +168,7 @@ void *MMU_init_virtual_mem(void){
 
     page_addr = KERNEL_STACK_LAST_PAGE;
     for(int i = 0; i < KERNEL_STACK_PAGE_COUNT; i++){
-        traverse_page_tables_for_entry(0, &page_addr, 1, (uint64_t) PAGE_pf_alloc(), 3, 0, 1);
+        traverse_page_tables_for_entry(0, &page_addr, 1, 0, 3, 1, 0, 0);
         page_addr = page_addr - PAGE_SIZE;
     }
 

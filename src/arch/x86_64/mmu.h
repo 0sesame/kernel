@@ -33,8 +33,10 @@ struct PageTable{
 
 
 void *MMU_init_virtual_mem(void);
+void *MMU_pf_alloc_many(int num);
 void *MMU_pf_alloc(void);
 void MMU_pf_free(void *pf);
-struct PageTableEntry *traverse_page_tables_for_entry(struct PageTableEntry *entry, uint64_t *address, uint8_t init, uint64_t physical_addr, uint8_t table_level, uint8_t alloc_on_demand, uint8_t present);
+void debug_page_table(struct PageTable *Pml4Table, uint64_t address);
+struct PageTableEntry *traverse_page_tables_for_entry(struct PageTableEntry *entry, uint64_t *address, uint8_t init, uint64_t physical_addr, uint8_t table_level, uint8_t alloc_on_demand, uint8_t present, uint8_t cascade);
 
 #endif
