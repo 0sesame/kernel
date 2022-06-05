@@ -200,13 +200,13 @@ void stress_test_stack(int inc){
 
 int kmain_virtual(void *args){
     //stress_test_stack(1000);
-    test_virtual_mem_alloc();
+    //test_virtual_mem_alloc();
     //test_bad_mem_access();
-    initialize_heap();
+    //initialize_heap();
     //test_kmalloc(0);
-    test_kmalloc(1);
-    print_pool_avail_blocks();
-    printk("Memory tests passed\n");
+    //test_kmalloc(1);
+    //print_pool_avail_blocks();
+    //printk("Memory tests passed\n");
     while(1){
         asm volatile("hlt" : :);
     };

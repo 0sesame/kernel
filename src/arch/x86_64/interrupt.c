@@ -2,6 +2,7 @@
 #include "mystdio.h"
 #include "isr_asm_labels.h"
 #include "irq_handlers.h"
+#include "syscall.h"
 
 #define FIRST_16_64_BIT 0xFFFF
 
@@ -206,6 +207,7 @@ void IRQ_init(void){
 
     IRQ_set_handler(0, IRQ_handle_div0, (void *) 0);
     IRQ_set_handler(14, IRQ_page_fault, (void *) 0);
+    IRQ_set_handler(YIELD_INT_NUM, IRQ_yield, (void *) 0);
     IRQ_set_handler(PIC1_BASE, IRQ_handle_timeout, (void *) 0);
     IRQ_set_handler(1 + PIC1_BASE, IRQ_handle_keyboard, (void *) 0);
     STI;

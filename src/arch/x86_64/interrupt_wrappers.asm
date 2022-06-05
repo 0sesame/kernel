@@ -31,9 +31,38 @@ isr_err_%1:
     ; uninit    <-- rsp
 %endmacro
 
+struc thread_ctx
+    .rsi: resq 1
+    .rdi: resq 1
+    .rdx: resq 1
+    .rcx: resq 1
+    .rbx: resq 1
+    .rax: resq 1
+    .r8: resq 1
+    .r9: resq 1
+    .r10: resq 1
+    .r11: resq 1
+    .r12: resq 1
+    .r13: resq 1
+    .r14: resq 1
+    .r15: resq 1
+    .cs: resw 1
+    .ss: resw 1
+    .ds: resw 1
+    .es: resw 1
+    .fs: resw 1
+    .gs: resw 1
+    .rbp: resq 1
+    .rsp: resq 1
+    .rip: resq 1
+    .rflags: resq 1
+endstruc
+
 section .text
 bits 64
 extern handle_irq
+extern curr_proc
+extern next_proc
 generic_isr:
     ; data registers are saved based on caller conventions
 
@@ -57,6 +86,89 @@ generic_isr:
     ; get rsi and rdi from when we saved them
     pop rsi
     pop rdi
+    
+    push rax
+    push rbx
+    mov rax, [curr_proc]
+    mov rbx, [next_proc]
+    cmp rax,rbx
+    jne .save_curr_ctx
+
+    pop rbx
+    pop rax
+    iretq
+
+.save_curr_ctx:
+    push rbx
+    mov rbx, [curr_proc]
+    mov [rbx + thread_ctx.rax], rax
+    mov rax, [curr_proc]
+    pop rbx
+    mov [rax + thread_ctx.rbx], rbx
+    mov [rax + thread_ctx.rdi], rdi
+    mov [rax + thread_ctx.rsi], rsi
+    mov [rax + thread_ctx.rdx], rdx
+    mov [rax + thread_ctx.rcx], rcx
+    mov [rax + thread_ctx.r8], r8
+    mov [rax + thread_ctx.r9], r9
+    mov [rax + thread_ctx.r10], r10
+    mov [rax + thread_ctx.r11], r11
+    mov [rax + thread_ctx.r12], r12
+    mov [rax + thread_ctx.r13], r13
+    mov [rax + thread_ctx.r14], r14
+    mov [rax + thread_ctx.r15], r15
+    mov [rax + thread_ctx.rbp], rbp
+
+    mov rbx, [rsp]
+    mov [rax + thread_ctx.rip], rbx
+    mov rbx, [rsp + 8]
+    mov [rax + thread_ctx.cs], rbx
+    mov rbx, [rsp + 16]
+    mov [rax + thread_ctx.rflags], rbx
+    mov rbx, [rsp + 24]
+    mov [rax + thread_ctx.rsp], rbx
+    mov rbx, [rsp + 32]
+    mov [rax + thread_ctx.ss], rbx
+
+    mov [rax + thread_ctx.ds], ds
+    mov [rax + thread_ctx.es], es
+    mov [rax + thread_ctx.fs], fs
+    mov [rax + thread_ctx.gs], gs
+
+.restore_next_ctx:
+    mov rbx, [next_proc]
+
+    mov rax, [rbx + thread_ctx.rip]
+    mov [rsp], rax
+    mov rax, [rbx + thread_ctx.cs]
+    mov [rsp + 8], rax
+    mov rax, [rbx + thread_ctx.rflags]
+    mov [rsp + 16], rax
+    mov rax, [rbx + thread_ctx.rsp]
+    mov [rsp + 24], rax
+    mov rax, [rbx + thread_ctx.ss]
+    mov [rsp + 32], rax
+
+    mov rax, [rbx + thread_ctx.rax]
+    mov rdi, [rbx + thread_ctx.rdi]
+    mov rsi, [rbx + thread_ctx.rsi]
+    mov rdx, [rbx + thread_ctx.rdx]
+    mov rcx, [rbx + thread_ctx.rcx]
+    mov r8, [rbx + thread_ctx.r8]
+    mov r9, [rbx + thread_ctx.r9]
+    mov r10, [rbx + thread_ctx.r10]
+    mov r11, [rbx + thread_ctx.r11]
+    mov r12, [rbx + thread_ctx.r12]
+    mov r13, [rbx + thread_ctx.r13]
+    mov r14, [rbx + thread_ctx.r14]
+    mov r15, [rbx + thread_ctx.r15]
+    mov r15, [rbx + thread_ctx.r15]
+    mov ds, [rbx + thread_ctx.ds]
+    mov es, [rbx + thread_ctx.es]
+    mov fs, [rbx + thread_ctx.fs]
+    mov gs, [rbx + thread_ctx.gs]
+    mov rbp, [rbx + thread_ctx.rbp]
+    mov rbx, [rbx + thread_ctx.rbx]
     iretq
 
 ISR 0

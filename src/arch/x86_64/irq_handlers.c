@@ -49,5 +49,9 @@ void IRQ_page_fault(int interrupt_number, int error, void *args){
         debug_page_table(0x0, addr);
         asm volatile("hlt" : :);
     }
+}
 
+void IRQ_yield(int interrupt_number, int error, void *args){
+    // call PROC scheduler stuff to change current proc to next proc
+    return;
 }
