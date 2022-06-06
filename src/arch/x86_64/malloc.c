@@ -87,6 +87,12 @@ void *kmalloc(size_t size){
     return allocate_too_large_for_pool(size);
 }
 
+void *kcalloc(size_t size){ // returns 0'd out memory at void *
+    void *ret = kmalloc(size);
+    memset(ret, 0, size);
+    return ret;
+}
+
 void free_block_from_pool(struct HeapPoolBlockHeader *header){
     printk("Free blocking from pool %d with pool %p\n", header->pool->max_size, header->pool);
     struct FreeList *temp = header->pool->head;
