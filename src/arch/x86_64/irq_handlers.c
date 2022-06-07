@@ -6,6 +6,7 @@
 #include "page_manager.h"
 #include "proc.h"
 
+int running_threads = 0;
 void IRQ_handle_keyboard(int interrupt_number, int error, void *args){
     char key = get_key_press();
     if(key){
@@ -55,7 +56,10 @@ void IRQ_page_fault(int interrupt_number, int error, void *args){
 void IRQ_yield(int interrupt_number, int error, void *args){
     // call PROC scheduler stuff to change current proc to next proc
     CLI_IF;
-    PROC_reschedule();
+    if(!(running_threads)){
+        PROC_reschedule();
+        running_threads = 1;
+    }
     STI_IF;
 }
 
