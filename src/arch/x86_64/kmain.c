@@ -9,6 +9,7 @@
 #include "malloc.h"
 #include "syscall.h"
 #include "proc.h"
+#include "snakes.h"
 
 int kmain(void *args);
 int kmain_virtual(void *args);
@@ -227,8 +228,9 @@ int kmain_virtual(void *args){
     //print_pool_avail_blocks();
     //printk("Memory tests passed\n");
     PROC_init();
-    PROC_create_kthread(&test_proc, (void *) 1);
-    PROC_create_kthread(&test_proc, (void *) 2);
+    //PROC_create_kthread(&test_proc, (void *) 1);
+    //PROC_create_kthread(&test_proc, (void *) 2);
+    setup_snakes(1);
     while(1){
         PROC_run();
     };

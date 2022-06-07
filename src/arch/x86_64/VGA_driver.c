@@ -9,6 +9,14 @@ static unsigned short height = 25;
 static int cursor = 0;
 static unsigned char default_color = VGA_COLOR(VGA_WHITE, VGA_BLACK);
 
+int VGA_row_count(void){
+    return width;
+}
+
+int VGA_col_count(void){
+    return height;
+}
+
 void VGA_display_char_at(unsigned short row, unsigned short column, char c, char color){
     /*
     int enable_ints = 0;
@@ -27,6 +35,11 @@ void VGA_display_char_at(unsigned short row, unsigned short column, char c, char
         STI;
     }
     */
+}
+
+void VGA_display_attr_char(int x, int y, char c, int fg, int bg){
+    unsigned short color = VGA_COLOR(fg, bg);
+    VGA_display_char_at((unsigned short) x, (unsigned short) y, c, color);
 }
 
 void scroll(void){

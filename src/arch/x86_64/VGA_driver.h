@@ -17,8 +17,11 @@
 
 #define VGA_COLOR(fg, bg) (fg) | (bg) << 4
 
+void VGA_display_attr_char(int x, int y, char c, int fg, int bg);
 void VGA_display_char_at(unsigned short row, unsigned short column, char c, char color);
 void VGA_display_char(char);
 void VGA_remove_char(void);
 void VGA_display_str(const char *);
 void VGA_clear(void);
+int VGA_row_count(void);
+int VGA_col_count(void);

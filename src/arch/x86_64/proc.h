@@ -3,6 +3,7 @@
 #define PROC_THREAD_STACK_SPACING ((uint64_t) 1 << 21)
 #define PROC_THREAD_STACK_PAGES 250
 
+
 typedef void (*kproc_t)(void *);
 struct thread_ctx{
     uint64_t rsi;
@@ -31,10 +32,19 @@ struct thread_ctx{
     uint16_t gs;
 }__attribute__((packed));
 
+struct Process{ // thread_ctx required to be first entry
+    struct thread_ctx ctx;
+    kproc_t *entry_point;
+    int pid;
+    void * arg;
+    struct Process *next;
+    struct Process *prev;
+};
+
 void PROC_reschedule(void);
 void PROC_run(void);
 void PROC_init(void);
 void PROC_destroy_running(void);
-void PROC_create_kthread(kproc_t entry_point, void *arg);
-extern struct thread_ctx *curr_proc;
-extern struct thread_ctx *next_proc;
+struct Process *PROC_create_kthread(kproc_t entry_point, void *arg);
+extern struct Process *curr_proc;
+extern struct Process *next_proc;
