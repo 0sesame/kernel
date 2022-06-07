@@ -1,6 +1,7 @@
 #include <stdint-gcc.h>
 
-#define PROC_THREAD_STACK_SPACING ((uint64_t) 1 << 21)
+// this leaves 5 pages between initialized alloc on demand pages and the next stack
+#define PROC_THREAD_STACK_SPACING ((uint64_t) 1 << 20)
 #define PROC_THREAD_STACK_PAGES 250
 
 
