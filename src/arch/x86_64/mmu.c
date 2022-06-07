@@ -2,10 +2,12 @@
 #include "string.h"
 #include "mystdio.h"
 #include "mmu.h"
+#include "proc.h"
 
 #define END_OF_ID_MAP ((uint64_t) 1 << 40)
 
-#define KERNEL_STACK_LAST_PAGE (((uint64_t) 0x2 << 40) - PAGE_SIZE)
+#define KERNEL_STACK_TOP ((uint64_t) 0x2 << 40)
+#define KERNEL_STACK_LAST_PAGE (KERNEL_STACK_TOP - PAGE_SIZE)
 #define KERNEL_STACK_PAGE_COUNT 100
 
 #define KERNEL_STACKS_INDX 1
@@ -14,6 +16,9 @@
 
 static struct PageTable *Pml4Table;
 static uint64_t virutal_kernel_heap_next_avail = KERNEL_HEAP_START;
+
+// each thread will get 16Mb of stack, allowing for 2^16 thread's with given stack size
+static uint64_t kernel_stack_next_avail = KERNEL_STACK_TOP - PROC_THREAD_STACK_SPACING;
 
 struct PageTable* init_page_table_for_entry(struct PageTableEntry* entry, uint8_t alloc_on_demand, uint8_t present, uint8_t alloc_cascade){
     struct PageTable *new_pt = (struct PageTable *) PAGE_pf_alloc();
@@ -108,8 +113,8 @@ void debug_page_table(struct PageTable *table, uint64_t address){
     }
     struct PageTableIndex *page_indx = (struct PageTableIndex *) &address;
     struct PageTable *curr;
-    printk("addr: %lx\n", address);
-    printk("addr translated: %lx\n", ((uint64_t) traverse_page_tables_for_entry(0, &address, 0, 0, 3, 0, 0, 0)->base_address) << 12);
+    printk("addr: %p\n", (void *)address);
+    printk("addr translated: %p\n", (void *) (((uint64_t) traverse_page_tables_for_entry(0, &address, 0, 0, 3, 0, 0, 0)->base_address) << 12));
     printk("p4: %p\n", table);
     curr = (struct PageTable *) ((uint64_t) table->entries[page_indx->p4_index].base_address << 12);
     printk("p3: %p from p4 indx: %d\n", curr, page_indx->p4_index);
@@ -167,7 +172,7 @@ void *MMU_init_virtual_mem(void){
     cr3_as_int = (uint64_t *) &cr3;
 
     page_addr = KERNEL_STACK_LAST_PAGE;
-    for(int i = 0; i < KERNEL_STACK_PAGE_COUNT; i++){
+    for(int i = 0; i < PROC_THREAD_STACK_PAGES; i++){
         traverse_page_tables_for_entry(0, &page_addr, 1, 0, 3, 1, 0, 0);
         page_addr = page_addr - PAGE_SIZE;
     }
@@ -175,4 +180,21 @@ void *MMU_init_virtual_mem(void){
     asm volatile("mov %0, %%cr3" ::"r" (*cr3_as_int));
 
     return (void *) KERNEL_STACK_LAST_PAGE + PAGE_SIZE - 1;
+}
+
+void *MMU_alloc_kstack(void){
+    uint64_t temp;
+    if(kernel_stack_next_avail <= END_OF_ID_MAP){
+        printk("Out of stack space for new kernel stack\n");
+        return 0x0;
+    }
+    // set 1MB of pages to alloc on demand for the stack
+    temp = kernel_stack_next_avail;
+    for(int i = 0; i < PROC_THREAD_STACK_PAGES; i++){
+        traverse_page_tables_for_entry(0, &temp, 1, 0, 3, 1, 0, 0);
+        temp = temp - PAGE_SIZE;
+    }
+    temp = kernel_stack_next_avail;
+    kernel_stack_next_avail = kernel_stack_next_avail - PROC_THREAD_STACK_SPACING;
+    return (void *) temp;
 }

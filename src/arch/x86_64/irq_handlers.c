@@ -4,6 +4,7 @@
 #include "mystdio.h"
 #include "mmu.h"
 #include "page_manager.h"
+#include "proc.h"
 
 void IRQ_handle_keyboard(int interrupt_number, int error, void *args){
     char key = get_key_press();
@@ -53,5 +54,15 @@ void IRQ_page_fault(int interrupt_number, int error, void *args){
 
 void IRQ_yield(int interrupt_number, int error, void *args){
     // call PROC scheduler stuff to change current proc to next proc
-    return;
+    CLI_IF;
+    PROC_reschedule();
+    STI_IF;
+}
+
+void IRQ_exit(int interrupt_number, int error, void *args){
+    // call PROC scheduler stuff to change current proc to next proc
+    CLI_IF;
+    PROC_destroy_running();
+    PROC_reschedule();
+    STI_IF;
 }

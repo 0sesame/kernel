@@ -1,5 +1,9 @@
 #include <stdint-gcc.h>
 
+#define PROC_THREAD_STACK_SPACING ((uint64_t) 1 << 21)
+#define PROC_THREAD_STACK_PAGES 250
+
+typedef void (*kproc_t)(void *);
 struct thread_ctx{
     uint64_t rsi;
     uint64_t rdi;
@@ -15,17 +19,22 @@ struct thread_ctx{
     uint64_t r13;
     uint64_t r14;
     uint64_t r15;
-    uint64_t cs;
-    uint64_t ss;
-    uint64_t ds;
-    uint64_t es;
-    uint64_t fs;
-    uint64_t gs;
     uint64_t rbp;
     uint64_t rsp;
     uint64_t rip;
     uint64_t rflags;
-};
+    uint16_t cs;
+    uint16_t ss;
+    uint16_t ds;
+    uint16_t es;
+    uint16_t fs;
+    uint16_t gs;
+}__attribute__((packed));
 
+void PROC_reschedule(void);
+void PROC_run(void);
+void PROC_init(void);
+void PROC_destroy_running(void);
+void PROC_create_kthread(kproc_t entry_point, void *arg);
 extern struct thread_ctx *curr_proc;
 extern struct thread_ctx *next_proc;

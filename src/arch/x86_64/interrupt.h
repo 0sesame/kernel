@@ -6,6 +6,8 @@
 #define CLI cli()
 #define STI sti()
 
+#define KERNEL_SEGMENT_OFFSET 0x08
+
 // CLI_IF and STI_IF should always be paired
 #define CLI_IF uint8_t enable_ints = 0; if(are_interrupts_enabled()){enable_ints = 1; CLI;}
 #define STI_IF if(enable_ints){STI;}

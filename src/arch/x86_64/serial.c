@@ -73,7 +73,7 @@ void handle_line_interrupt(void){
 int producer_add_byte(struct UartState *uart_state, char byte){
     if(uart_state->producer == uart_state->consumer - 1 ||
         (uart_state->producer == uart_state->end_of_buff && 
-        uart_state->consumer == &uart_state->buff[0])){ // buffer is full
+        uart_state->consumer == &(uart_state->buff[0]))){ // buffer is full
             return -1;
         }
     

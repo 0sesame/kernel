@@ -7,6 +7,8 @@
 #include "page_manager.h"
 #include "mmu.h"
 #include "malloc.h"
+#include "syscall.h"
+#include "proc.h"
 
 int kmain(void *args);
 int kmain_virtual(void *args);
@@ -21,7 +23,7 @@ int kmain(void *args){
     initialize_ps2_controller();
     initialize_ps2_keyboard();
     kernel_stack = MMU_init_virtual_mem(); 
-    printk("moving stack to %p\n", kernel_stack);
+    //printk("moving stack to %p\n", kernel_stack);
     asm volatile("mov %0, %%rsp"
         ::"m" (kernel_stack));
     kmain_virtual(args);
@@ -198,17 +200,37 @@ void stress_test_stack(int inc){
     stress_test_stack(inc - 1);
 }
 
+void test_proc(void *arg){
+    uint64_t proc_num = (uint64_t) arg;
+    while(1){
+        printk("by golly we've done it %lu\n", proc_num);
+        yield();
+        printk("dingus bingus bongo %lu\n", proc_num);
+        kexit();
+    }
+}
+
+void test_proc2(void *arg){
+    while(1){
+        printk("dingus bingus\n");
+        yield();
+    }
+}
+
 int kmain_virtual(void *args){
+    initialize_heap();
     //stress_test_stack(1000);
     //test_virtual_mem_alloc();
     //test_bad_mem_access();
-    //initialize_heap();
     //test_kmalloc(0);
     //test_kmalloc(1);
     //print_pool_avail_blocks();
     //printk("Memory tests passed\n");
+    PROC_init();
+    PROC_create_kthread(&test_proc, (void *) 1);
+    PROC_create_kthread(&test_proc, (void *) 2);
     while(1){
-        asm volatile("hlt" : :);
+        PROC_run();
     };
     return 0;
 }

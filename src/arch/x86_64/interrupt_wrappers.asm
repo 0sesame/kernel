@@ -46,16 +46,16 @@ struc thread_ctx
     .r13: resq 1
     .r14: resq 1
     .r15: resq 1
+    .rbp: resq 1
+    .rsp: resq 1
+    .rip: resq 1
+    .rflags: resq 1
     .cs: resw 1
     .ss: resw 1
     .ds: resw 1
     .es: resw 1
     .fs: resw 1
     .gs: resw 1
-    .rbp: resq 1
-    .rsp: resq 1
-    .rip: resq 1
-    .rflags: resq 1
 endstruc
 
 section .text
@@ -99,6 +99,11 @@ generic_isr:
     iretq
 
 .save_curr_ctx:
+    ; pop both for my own noggin's sake
+    pop rax
+    pop rbx
+
+    ; end up pushing rbx anyway but im too tired to keep track of stuff
     push rbx
     mov rbx, [curr_proc]
     mov [rbx + thread_ctx.rax], rax
@@ -135,8 +140,10 @@ generic_isr:
     mov [rax + thread_ctx.fs], fs
     mov [rax + thread_ctx.gs], gs
 
-.restore_next_ctx:
     mov rbx, [next_proc]
+    mov [curr_proc], rbx
+
+.restore_next_ctx:
 
     mov rax, [rbx + thread_ctx.rip]
     mov [rsp], rax
@@ -161,7 +168,6 @@ generic_isr:
     mov r12, [rbx + thread_ctx.r12]
     mov r13, [rbx + thread_ctx.r13]
     mov r14, [rbx + thread_ctx.r14]
-    mov r15, [rbx + thread_ctx.r15]
     mov r15, [rbx + thread_ctx.r15]
     mov ds, [rbx + thread_ctx.ds]
     mov es, [rbx + thread_ctx.es]

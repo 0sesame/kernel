@@ -4,6 +4,7 @@
 #include "mmu.h"
 #include "page_manager.h"
 #include "mystdio.h"
+#include "string.h"
 
 #define POOL_INIT_PAGES 64 // init about 2.5Mb on the heap for each pool
 
@@ -94,12 +95,10 @@ void *kcalloc(size_t size){ // returns 0'd out memory at void *
 }
 
 void free_block_from_pool(struct HeapPoolBlockHeader *header){
-    printk("Free blocking from pool %d with pool %p\n", header->pool->max_size, header->pool);
     struct FreeList *temp = header->pool->head;
     header->pool->head = (struct FreeList *) header;
     header->pool->head->next = temp;
     header->pool->available_blocks += 1;
-    printk("available blocks %d\n", header->pool->available_blocks);
 }
 
 void print_pool_avail_blocks(void){

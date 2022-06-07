@@ -19,7 +19,6 @@
 #define PIC_READ_IRR 0x0a
 #define PIC_READ_IRS 0x0b
 
-#define KERNEL_SEGMENT_OFFSET 0x08
 
 #define DF 8
 #define PF 14
@@ -36,6 +35,7 @@ static struct Gdt gdt;
 static uint64_t df_interrupt_stack[256];
 static uint64_t pf_interrupt_stack[256];
 static uint64_t gp_interrupt_stack[256];
+static uint64_t yield_interrupt_stack[256];
 int interrupts_enabled = 0;
 
 void PIC_remap(int offset1, int offset2){
@@ -169,6 +169,7 @@ void TSS_init(void){
     tss.interrupt_stack_table[0] = (uint64_t) df_interrupt_stack + 255;
     tss.interrupt_stack_table[1] = (uint64_t) pf_interrupt_stack + 255;
     tss.interrupt_stack_table[2] = (uint64_t) gp_interrupt_stack + 255;
+    tss.interrupt_stack_table[3] = (uint64_t) yield_interrupt_stack + 255;
 };
 
 void GDT_init(void){
@@ -208,6 +209,7 @@ void IRQ_init(void){
     IRQ_set_handler(0, IRQ_handle_div0, (void *) 0);
     IRQ_set_handler(14, IRQ_page_fault, (void *) 0);
     IRQ_set_handler(YIELD_INT_NUM, IRQ_yield, (void *) 0);
+    IRQ_set_handler(EXIT_INT_NUM, IRQ_exit, (void *) 0);
     IRQ_set_handler(PIC1_BASE, IRQ_handle_timeout, (void *) 0);
     IRQ_set_handler(1 + PIC1_BASE, IRQ_handle_keyboard, (void *) 0);
     STI;
@@ -496,10 +498,14 @@ void IDT_init(struct Idt *idt){
         idt->entries[i].gdt_selector = KERNEL_SEGMENT_OFFSET;
         idt->entries[i].reserved = 0;
     }
+
+    // have faults use their own stacks
     idt->entries[DF].options.ist = 1;
     idt->entries[PF].options.ist = 2;
     idt->entries[GP].options.ist = 3;
-    // initialize function pointers to isr from asm file
+    idt->entries[YIELD_INT_NUM].options.ist = 4;
+    idt->entries[EXIT_INT_NUM].options.ist = 4; // use same stack for yield and exit
+    // initialize function pointers to isr from asm filek
     IDT_init_function_pointers(idt); 
 
     // this table pointer struct is required by lidt to load idt

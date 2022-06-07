@@ -32,6 +32,7 @@ struct PageTable{
 };
 
 
+void *MMU_alloc_kstack(void);
 void *MMU_init_virtual_mem(void);
 void *MMU_pf_alloc_many(int num);
 void *MMU_pf_alloc(void);
