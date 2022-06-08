@@ -42,10 +42,19 @@ struct Process{ // thread_ctx required to be first entry
     struct Process *prev;
 };
 
+struct ProcessQueue{
+    struct Process *head;
+    struct Process *tail;
+    int cnt;
+};
+
+void proc_queue_init(struct ProcessQueue *q);
 void PROC_reschedule(void);
 void PROC_run(void);
 void PROC_init(void);
 void PROC_destroy_running(void);
+void PROC_block_on(struct ProcessQueue *queue, int enable_ints);
+void PROC_unblock_one(struct ProcessQueue *queue);
 struct Process *PROC_create_kthread(kproc_t entry_point, void *arg);
 extern struct Process *curr_proc;
 extern struct Process *next_proc;

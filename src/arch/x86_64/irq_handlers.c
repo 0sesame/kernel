@@ -5,15 +5,15 @@
 #include "mmu.h"
 #include "page_manager.h"
 #include "proc.h"
+#include "KBD_driver.h"
 
-int running_threads = 0;
 void IRQ_handle_keyboard(int interrupt_number, int error, void *args){
     char key = get_key_press();
+    IRQ_end_of_interrupt(interrupt_number - PIC1_BASE); 
     if(key){
-        printk("%c", key);
+        KBD_write(key);
     }
     // IRQ_end_of_interrupt wants associated PIC line of interrupt, so sub base
-    IRQ_end_of_interrupt(interrupt_number - PIC1_BASE); 
 }
 
 void IRQ_handle_timeout(int interrupt_number, int error, void *args){
@@ -56,10 +56,7 @@ void IRQ_page_fault(int interrupt_number, int error, void *args){
 void IRQ_yield(int interrupt_number, int error, void *args){
     // call PROC scheduler stuff to change current proc to next proc
     CLI_IF;
-    if(!(running_threads)){
-        PROC_reschedule();
-        running_threads = 1;
-    }
+    PROC_reschedule();
     STI_IF;
 }
 

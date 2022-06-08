@@ -36,7 +36,7 @@ static uint64_t df_interrupt_stack[256];
 static uint64_t pf_interrupt_stack[256];
 static uint64_t gp_interrupt_stack[256];
 static uint64_t yield_interrupt_stack[256];
-int interrupts_enabled = 0;
+int interrupts_enabled = 1;
 
 void PIC_remap(int offset1, int offset2){
     // remaps interrupts because of conflict with cpu exceptions
@@ -68,8 +68,8 @@ void PIC_remap(int offset1, int offset2){
 }
 
 void sti(void){
-    asm volatile("sti" ::);
     interrupts_enabled = 1;
+    asm volatile("sti" ::);
 }
 
 void cli(void){

@@ -10,6 +10,7 @@
 #include "syscall.h"
 #include "proc.h"
 #include "snakes.h"
+#include "KBD_driver.h"
 
 int kmain(void *args);
 int kmain_virtual(void *args);
@@ -19,10 +20,10 @@ int kmain(void *args){
     VGA_clear();
     IRQ_init();
     SER_init();
-    GDT_init();
-    PAGE_init(args);
     initialize_ps2_controller();
     initialize_ps2_keyboard();
+    GDT_init();
+    PAGE_init(args);
     kernel_stack = MMU_init_virtual_mem(); 
     //printk("moving stack to %p\n", kernel_stack);
     asm volatile("mov %0, %%rsp"
@@ -211,10 +212,12 @@ void test_proc(void *arg){
     }
 }
 
-void test_proc2(void *arg){
+void test_proc_kbd(void *arg){
+    uint64_t proc_num = (uint64_t) arg;
+    char kbd_byte;
     while(1){
-        printk("dingus bingus\n");
-        yield();
+        kbd_byte = KBD_read(); // proc should block here
+        printk("\nchar: %c in test_proc #%lu\n", kbd_byte, proc_num);
     }
 }
 
@@ -227,10 +230,11 @@ int kmain_virtual(void *args){
     //test_kmalloc(1);
     //print_pool_avail_blocks();
     //printk("Memory tests passed\n");
+    KBD_init();
     PROC_init();
-    //PROC_create_kthread(&test_proc, (void *) 1);
-    //PROC_create_kthread(&test_proc, (void *) 2);
-    setup_snakes(1);
+    //setup_snakes(1);
+    PROC_create_kthread(test_proc_kbd, (void *)1);
+    PROC_create_kthread(test_proc_kbd, (void *)2);
     while(1){
         PROC_run();
     };

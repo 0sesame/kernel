@@ -2,6 +2,7 @@
 #include "mystdio.h"
 #include "VGA_driver.h"
 #include "interrupt.h"
+#include "KBD_driver.h"
 
 #define PS2_DATA 0x60
 #define PS2_CMD 0x64 
@@ -189,7 +190,7 @@ void get_and_display_key_press(void){
     while(!(inb(PS2_STATUS) & PS2_OUT_STATUS)){};// wait for input
     data = inb(PS2_DATA);
     if(data < TOP_OF_CHAR_RANGE){
-        char_out(get_ascii_from_key_press(data));
+        KBD_write(get_ascii_from_key_press(data));
     }else if(data >= KEY_RELEASE_OFFSET){
         handle_key_release(data);
     }

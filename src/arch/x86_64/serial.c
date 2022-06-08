@@ -70,7 +70,7 @@ void handle_line_interrupt(void){
     inb(LINE_STATUS_REGISTER);
 }
 
-int producer_add_byte(struct UartState *uart_state, char byte){
+int producer_add_byte_to_buff(struct UartState *uart_state, char byte){
     if(uart_state->producer == uart_state->consumer - 1 ||
         (uart_state->producer == uart_state->end_of_buff && 
         uart_state->consumer == &(uart_state->buff[0]))){ // buffer is full
@@ -84,7 +84,11 @@ int producer_add_byte(struct UartState *uart_state, char byte){
     else{
         uart_state->producer = &uart_state->buff[0];
     }
+    return 0;
+}
 
+int producer_add_byte(struct UartState *uart_state, char byte){
+    producer_add_byte_to_buff(uart_state, byte);
     if(transmit_empty()){
         start_tx(uart_state);
     }
@@ -101,7 +105,7 @@ void SER_handle_interrupt(int interrupt_number, int error, void *args){
     else{
         handle_line_interrupt();
     }
-    IRQ_end_of_interrupt(TX_EMPTY_IRQ);
+    IRQ_end_of_interrupt(interrupt_number);
     STI_IF;
 }
 
@@ -117,9 +121,11 @@ void SER_init(void){
 int SER_write(char *byte, int len){
     // returns the number of bytes added to the serial buffer
     for(int i = 0; i < len; i++){
+        CLI_IF;
         if(producer_add_byte(&uart_state, byte[i]) < 0){
             return i;
         }
+        STI_IF;
     }
     return len;
 }
