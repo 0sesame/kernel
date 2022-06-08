@@ -217,7 +217,7 @@ void test_proc_kbd(void *arg){
     char kbd_byte;
     while(1){
         kbd_byte = KBD_read(); // proc should block here
-        printk("\nchar: %c in test_proc #%lu\n", kbd_byte, proc_num);
+        printk("char: %c in test_proc #%lu\n", kbd_byte, proc_num);
     }
 }
 
@@ -237,6 +237,7 @@ int kmain_virtual(void *args){
     PROC_create_kthread(test_proc_kbd, (void *)2);
     while(1){
         PROC_run();
+        asm volatile("hlt" ::);
     };
     return 0;
 }
